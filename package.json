@@ -1,0 +1,11 @@
+{
+  "name": "playwright-action",
+  "version": "1.0.0",
+  "main": "clockin.js",
+  "scripts": {
+    "start": "node clockin.js"
+  },
+  "dependencies": {
+    "playwright": "^1.50.1"
+  }
+}
