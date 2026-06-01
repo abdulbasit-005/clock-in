@@ -19,7 +19,7 @@ async function runClockIn() {
 
   try {
     console.log('[clockin] Navigating to login page...');
-    await page.goto('https://people.forthlogic.com/login', { waitUntil: 'networkidle' }); [cite: 74]
+    await page.goto('https://people.forthlogic.com/login', { waitUntil: 'networkidle' });
 
     console.log('[clockin] Filling credentials securely from environment variables...');
     await page.fill('#email', process.env.WORK_EMAIL);
@@ -27,12 +27,12 @@ async function runClockIn() {
 
     console.log('[clockin] Submitting login form...');
     await Promise.all([
-      page.click('button[type="submit"]'), [cite: 76]
-      page.waitForNavigation({ waitUntil: 'networkidle' }) [cite: 76]
+      page.click('button[type="submit"]'),
+      page.waitForNavigation({ waitUntil: 'networkidle' })
     ]);
 
     console.log('[clockin] Checking "#clock_in" button state...');
-    const clockInButton = page.locator('#clock_in'); [cite: 77]
+    const clockInButton = page.locator('#clock_in');
     await clockInButton.waitFor({ state: 'visible', timeout: 10000 });
     
     const isDisabled = await clockInButton.isDisabled();
@@ -45,7 +45,7 @@ async function runClockIn() {
       await clockInButton.click({ timeout: 30000 });
       
       console.log('[clockin] Confirming action...');
-      await page.waitForSelector('#clock_out, #clock_in', { timeout: 30000 }); [cite: 77]
+      await page.waitForSelector('#clock_out, #clock_in', { timeout: 30000 });
       console.log('[clockin] Action completed successfully.');
     }
 
@@ -58,11 +58,11 @@ async function runClockIn() {
     }
 
   } catch (err) {
-    console.error('[clockin] Error encountered during execution:', err); [cite: 80]
+    console.error('[clockin] Error encountered during execution:', err);
     process.exit(1);
   } finally {
-    await context.close(); [cite: 81]
-    await browser.close(); [cite: 87]
+    await context.close();
+    await browser.close();
   }
 }
 
