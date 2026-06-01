@@ -4,7 +4,6 @@ on:
   schedule:
     # 6:00 PM PKT is 1:00 PM UTC (13:00)
     - cron: '0 13 * * *'
-  # Allows you to manually trigger the clock-in from the Actions tab for testing
   workflow_dispatch: 
 
 jobs:
@@ -13,6 +12,52 @@ jobs:
 
     steps:
     - name: Send Clock-In POST Request
+      id: clockin_request
       run: |
-        curl -X POST https://playwright-crawler-rajaabdulbasit3178-uoc73dpp.leapcell.dev/clockin \
-             -H "Content-Length: 0"
+        STATUS_CODE=$(curl -o /dev/null -s -w "%{http_code}" -X POST https://playwright-crawler-rajaabdulbasit3178-uoc73dpp.leapcell.dev/clockin -H "Content-Length: 0")
+        echo "HTTP Status Code: $STATUS_CODE"
+        
+        if [ "$STATUS_CODE" -eq 200 ]; then
+          echo "status=success" >> $GITHUB_OUTPUT
+        else
+          echo "status=failed" >> $GITHUB_OUTPUT
+          echo "Error: Received status code $STATUS_CODE"
+          exit 1
+        fi
+
+    - name: Send Success Email
+      if: success()
+      uses: dawidd6/action-send-mail@v3
+      with:
+        server_address: smtp.gmail.com
+        server_port: 465
+        username: ${{ secrets.EMAIL_USERNAME }}
+        password: ${{ secrets.EMAIL_PASSWORD }}
+        subject: "✅ Clock-In Successful!"
+        to: abasit@forthlogic.com
+        from: GitHub Actions Automation <${{ secrets.EMAIL_USERNAME }}>
+        body: |
+          Hello,
+          
+          Your automated clock-in request was executed successfully at 6:00 PM PKT.
+          The Leapcell endpoint responded with a 200 OK.
+          
+          Have a great evening!
+
+    - name: Send Failure Email
+      if: failure()
+      uses: dawidd6/action-send-mail@v3
+      with:
+        server_address: smtp.gmail.com
+        server_port: 465
+        username: ${{ secrets.EMAIL_USERNAME }}
+        password: ${{ secrets.EMAIL_PASSWORD }}
+        subject: "❌ Clock-In FAILED!"
+        to: abasit@forthlogic.com
+        from: GitHub Actions Automation <${{ secrets.EMAIL_USERNAME }}>
+        body: |
+          Hello,
+          
+          ATTENTION: Your automated clock-in request FAILED today.
+          
+          Please check your GitHub Actions logs to see what went wrong, and make sure to clock-in manually on the website so you don't miss your hours!
