@@ -11,30 +11,61 @@ jobs:
     runs-on: ubuntu-latest
 
     steps:
-    - name: Trigger Clock-In Endpoint
-      run: |
-        echo "Dispatching trigger to Leapcell..."
-        
-        # We give curl a max-time of 3 seconds. It hits Leapcell and disconnects immediately,
-        # letting your Leapcell instance process the Playwright script in the background.
-        curl --max-time 3 -X POST https://playwright-crawler-rajaabdulbasit3178-uoc73dpp.leapcell.dev/clockin \
-             -H "Content-Length: 0" || true
-             
-        echo "Trigger successfully sent!"
+    - name: Checkout Repository Code
+      uses: actions/checkout@v4
 
-    - name: Send Dispatch Confirmation Email
+    - name: Setup Node.js
+      uses: actions/setup-node@v4
+      with:
+        node-version: '20'
+        cache: 'npm'
+
+    - name: Install Dependencies
+      run: npm install
+
+    - name: Install Playwright Chromium
+      run: npx playwright install chromium --with-deps
+
+    - name: Execute Clock-In Script
+      # This block injects the secrets securely into the script run environment
+      env:
+        WORK_EMAIL: ${{ secrets.WORK_EMAIL }}
+        WORK_PASSWORD: ${{ secrets.WORK_PASSWORD }}
+      run: node clockin.js
+
+    - name: Send Success Email with Screenshot
+      if: success()
       uses: dawidd6/action-send-mail@v4
       with:
         server_address: smtp.gmail.com
         server_port: 465
         username: ${{ secrets.EMAIL_USERNAME }}
         password: ${{ secrets.EMAIL_PASSWORD }}
-        subject: "🚀 Clock-In Triggered Successfully"
+        subject: "✅ Clock-In Successful!"
+        to: abasit@forthlogic.com
+        from: GitHub Actions Automation <${{ secrets.EMAIL_USERNAME }}>
+        attachments: screenshot.png
+        body: |
+          Hello,
+          
+          The automated clock-in script has successfully run on the GitHub runner at 6:00 PM PKT.
+          
+          Your confirmation screenshot is attached to this email. Have a great evening!
+
+    - name: Send Failure Email
+      if: failure()
+      uses: dawidd6/action-send-mail@v4
+      with:
+        server_address: smtp.gmail.com
+        server_port: 465
+        username: ${{ secrets.EMAIL_USERNAME }}
+        password: ${{ secrets.EMAIL_PASSWORD }}
+        subject: "❌ Clock-In FAILED!"
         to: abasit@forthlogic.com
         from: GitHub Actions Automation <${{ secrets.EMAIL_USERNAME }}>
         body: |
           Hello,
           
-          The daily automated clock-in routine has successfully sent the trigger signal to your Leapcell backend at 6:00 PM PKT.
+          ATTENTION: Your automated clock-in script failed on execution today.
           
-          Your Playwright script is now running on your server. Have a wonderful evening!
+          Please open your private GitHub repository and check the Actions runner log history to determine what went wrong, and make sure to manually process your clock-in for today!
