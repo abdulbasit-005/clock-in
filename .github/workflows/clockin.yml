@@ -14,7 +14,8 @@ jobs:
     - name: Send Clock-In POST Request
       id: clockin_request
       run: |
-        STATUS_CODE=$(curl -o /dev/null -s -w "%{http_code}" -X POST https://playwright-crawler-rajaabdulbasit3178-uoc73dpp.leapcell.dev/clockin -H "Content-Length: 0")
+        # Added --max-time 120 (allows up to 2 minutes for Playwright to finish)
+        STATUS_CODE=$(curl --max-time 120 -o /dev/null -s -w "%{http_code}" -X POST https://playwright-crawler-rajaabdulbasit3178-uoc73dpp.leapcell.dev/clockin -H "Content-Length: 0")
         echo "HTTP Status Code: $STATUS_CODE"
         
         if [ "$STATUS_CODE" -eq 200 ]; then
@@ -27,7 +28,7 @@ jobs:
 
     - name: Send Success Email
       if: success()
-      uses: dawidd6/action-send-mail@v3
+      uses: dawidd6/action-send-mail@v4  # Upgraded to v4 to fix deprecation warning
       with:
         server_address: smtp.gmail.com
         server_port: 465
@@ -46,7 +47,7 @@ jobs:
 
     - name: Send Failure Email
       if: failure()
-      uses: dawidd6/action-send-mail@v3
+      uses: dawidd6/action-send-mail@v4  # Upgraded to v4 to fix deprecation warning
       with:
         server_address: smtp.gmail.com
         server_port: 465
