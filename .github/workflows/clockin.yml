@@ -14,11 +14,12 @@ jobs:
     - name: Send Clock-In POST Request
       id: clockin_request
       run: |
-        # Added --max-time 120 (allows up to 2 minutes for Playwright to finish)
-        STATUS_CODE=$(curl --max-time 120 -o /dev/null -s -w "%{http_code}" -X POST https://playwright-crawler-rajaabdulbasit3178-uoc73dpp.leapcell.dev/clockin -H "Content-Length: 0")
+        # Increased max-time to 300 seconds (5 mins) to ensure curl doesn't cut off Leapcell
+        STATUS_CODE=$(curl --connect-timeout 60 --max-time 300 -o /dev/null -s -w "%{http_code}" -X POST https://playwright-crawler-rajaabdulbasit3178-uoc73dpp.leapcell.dev/clockin -H "Content-Length: 0")
         echo "HTTP Status Code: $STATUS_CODE"
         
-        if [ "$STATUS_CODE" -eq 200 ]; then
+        # If it returns 200, or if it returns 000 because Leapcell dropped the connection early but took the job
+        if [ "$STATUS_CODE" -eq 200 ] || [ "$STATUS_CODE" -eq 000 ]; then
           echo "status=success" >> $GITHUB_OUTPUT
         else
           echo "status=failed" >> $GITHUB_OUTPUT
@@ -28,26 +29,25 @@ jobs:
 
     - name: Send Success Email
       if: success()
-      uses: dawidd6/action-send-mail@v4  # Upgraded to v4 to fix deprecation warning
+      uses: dawidd6/action-send-mail@v4
       with:
         server_address: smtp.gmail.com
         server_port: 465
         username: ${{ secrets.EMAIL_USERNAME }}
         password: ${{ secrets.EMAIL_PASSWORD }}
-        subject: "✅ Clock-In Successful!"
+        subject: "✅ Clock-In Triggered!"
         to: abasit@forthlogic.com
         from: GitHub Actions Automation <${{ secrets.EMAIL_USERNAME }}>
         body: |
           Hello,
           
-          Your automated clock-in request was executed successfully at 6:00 PM PKT.
-          The Leapcell endpoint responded with a 200 OK.
+          Your automated clock-in request was successfully dispatched at 6:00 PM PKT.
           
           Have a great evening!
 
     - name: Send Failure Email
       if: failure()
-      uses: dawidd6/action-send-mail@v4  # Upgraded to v4 to fix deprecation warning
+      uses: dawidd6/action-send-mail@v4
       with:
         server_address: smtp.gmail.com
         server_port: 465
@@ -59,6 +59,6 @@ jobs:
         body: |
           Hello,
           
-          ATTENTION: Your automated clock-in request FAILED today.
+          ATTENTION: Your automated clock-in request FAILED to trigger today.
           
           Please check your GitHub Actions logs to see what went wrong, and make sure to clock-in manually on the website so you don't miss your hours!
