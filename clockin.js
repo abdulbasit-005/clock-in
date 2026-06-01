@@ -21,7 +21,6 @@ async function runClockIn() {
     await page.goto('https://people.forthlogic.com/login', { waitUntil: 'networkidle' });
 
     console.log('[clockin] Filling credentials securely from environment variables...');
-    // Reading securely from process.env instead of hardcoding strings
     await page.fill('#email', process.env.WORK_EMAIL);
     await page.fill('#password', process.env.WORK_PASSWORD);
 
@@ -31,16 +30,30 @@ async function runClockIn() {
       page.waitForNavigation({ waitUntil: 'networkidle' })
     ]);
 
-    console.log('[clockin] Clicking "#clock_in" button...');
-    await page.click('#clock_in', { timeout: 60000 });
+    console.log('[clockin] Checking "#clock_in" button state...');
+    const clockInButton = page.locator('#clock_in');
+    
+    // Wait briefly to let the page load completely
+    await clockInButton.waitFor({ state: 'visible', timeout: 10000 });
+    
+    // Check if the button has a disabled attribute
+    const isDisabled = await clockInButton.isDisabled();
 
-    console.log('[clockin] Confirming action...');
-    await page.waitForSelector('#clock_out, #clock_in', { timeout: 60000 });
+    if (isDisabled) {
+      console.log('[clockin] ⚠️ "#clock_in" button is currently DISABLED.');
+      console.log('[clockin] You might already be clocked-in or it is outside clock-in hours.');
+    } else {
+      console.log('[clockin] Button is active. Clicking "#clock_in" button...');
+      await clockInButton.click({ timeout: 30000 });
+      
+      console.log('[clockin] Confirming action...');
+      await page.waitForSelector('#clock_out, #clock_in', { timeout: 30000 });
+      console.log('[clockin] Action completed successfully.');
+    }
 
     console.log('[clockin] Taking verification screenshot...');
     await page.screenshot({ path: 'screenshot.png', fullPage: true });
 
-    console.log('[clockin] Action complete successfully.');
   } catch (err) {
     console.error('[clockin] Error encountered during execution:', err);
     process.exit(1);
