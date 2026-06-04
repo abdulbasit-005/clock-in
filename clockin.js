@@ -19,8 +19,12 @@ async function runClockIn() {
 
   try {
     console.log('[clockin] Navigating to login page...');
-    // Waits only for the HTML DOM to load, which takes less than 3 seconds
-    await page.goto('https://people.forthlogic.com/login', { waitUntil: 'domcontentloaded' });
+    console.log('[clockin] Navigating to login page...');
+    // Increased timeout to 60000ms (60s) and switched to standard 'load' state
+    await page.goto('https://people.forthlogic.com/login', { 
+      waitUntil: 'load', 
+      timeout: 60000 
+    });
     console.log('[clockin] Filling credentials securely from environment variables...');
     await page.fill('#email', process.env.WORK_EMAIL);
     await page.fill('#password', process.env.WORK_PASSWORD);
